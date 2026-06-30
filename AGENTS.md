@@ -4,6 +4,7 @@
 
 AI-powered employee shift scheduler. Multi-tenant, human-in-the-loop.
 
+- **Desktop**: `src-tauri/` — Tauri v2 + Go sidecar. Rust manages sidecar lifecycle
 - **Frontend**: `frontend/` — React 19 + Vite 8 + Tailwind CSS 4 + shadcn/ui (new-york)
 - **Backend**: `backend/` — Go 1.26 + Fiber v2 + GORM (PostgreSQL, SQLite, MySQL, SQL Server)
 - **Database**: Choose via `DB_DRIVER` env var. Default PostgreSQL. SQLite for local dev (`DB_DRIVER=sqlite`). AutoMigrate on startup, seeds default data on empty DB
@@ -29,6 +30,8 @@ cd backend && go run main.go
 | Frontend | `npm run build` | `tsc -b && vite build` |
 | Frontend | `npm run lint` | oxlint |
 | Backend | `go run main.go` | runs from `backend/` |
+| Desktop | `bash scripts/build-sidecar.sh` | Build Go binary for current platform |
+| Desktop | `PKG_CONFIG_PATH=... cargo tauri dev` | Tauri dev mode (requires PKG_CONFIG_PATH) |
 
 ## Architecture
 
@@ -36,6 +39,7 @@ cd backend && go run main.go
 - **Frontend entrypoint**: `frontend/src/main.tsx` → `App.tsx`
 - **Path alias**: `@/` → `frontend/src/` (configured in vite.config.ts + tsconfig paths)
 - **API base**: `/api/v1`, JWT auth on `/schedules/*` routes (public: /health, /login, /holidays)
+- **Desktop**: Tauri v2 + Go sidecar binary. Rust cari port kosong, spawn Go binary, poll health check. Frontend auto-detect via `__TAURI_INTERNALS__`
 - **No tests** exist yet in either package
 - **No CI/CD** configured
 

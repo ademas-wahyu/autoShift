@@ -1,9 +1,26 @@
 import type { ScheduleConfig, ScheduleDetail } from '@/types'
 
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'
+let _base: string | null = null
+
+async function getBaseUrl(): Promise<string> {
+  if (_base) return _base
+
+  let base: string
+  if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+    const { invoke } = await import('@tauri-apps/api/core')
+    const port = await invoke<number>('get_api_port')
+    base = `http://localhost:${port}/api/v1`
+  } else {
+    base = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'
+  }
+
+  _base = base
+  return base
+}
 
 async function request<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const base = await getBaseUrl()
+  const res = await fetch(`${base}${path}`, {
     headers: { 'Content-Type': 'application/json', ...opts?.headers },
     ...opts,
   })

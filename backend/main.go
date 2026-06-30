@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/ademaswahyu/autoshift-backend/ai"
 	"github.com/ademaswahyu/autoshift-backend/config"
@@ -115,10 +117,23 @@ func main() {
 		port = p
 	}
 
-	log.Printf("autoShift API starting on :%s", port)
-	if err := app.Listen(":" + port); err != nil {
-		log.Fatalf("server error: %v", err)
+	// ── Graceful Shutdown ────────────────────────────────────
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		log.Printf("autoShift API starting on :%s", port)
+		if err := app.Listen(":" + port); err != nil {
+			log.Printf("server error: %v", err)
+		}
+	}()
+
+	sig := <-quit
+	log.Printf("received signal %v, shutting down...", sig)
+	if err := app.Shutdown(); err != nil {
+		log.Printf("forced shutdown error: %v", err)
 	}
+	log.Println("server stopped gracefully")
 }
 
 func findOrCreateRole(tenantID uint, name string, level int) models.EmployeeRole {

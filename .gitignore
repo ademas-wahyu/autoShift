@@ -49,5 +49,10 @@ go.work.sum
 .DS_Store
 Thumbs.db
 
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/
+
 # folder planning
 /planning
