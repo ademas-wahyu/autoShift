@@ -61,22 +61,32 @@
 └─────────────────────────────────────────────┘
 ```
 
-Detail arsitektur lengkap ada di [architecture.md](architecture.md) dan [docs/desktop.md](docs/desktop.md).
+Detail arsitektur lengkap ada di [planning/architecture.md](planning/architecture.md) dan [docs/desktop.md](docs/desktop.md).
 
 ## Struktur Proyek
 
 ```
 ├── src-tauri/             # Tauri desktop app (Rust)
+│   ├── src/lib.rs         # Sidecar lifecycle manager
+│   ├── src/main.rs         # Entrypoint
+│   ├── capabilities/      # Tauri v2 permissions
+│   └── icons/             # App icons
 ├── frontend/              # React + Vite + Tailwind
+│   └── src/               # Components, hooks, lib, types
 ├── backend/               # Go + Fiber + GORM
-├── scripts/               # Build & utility scripts
+│   ├── ai/                # AI generator (mock / openai)
+│   ├── config/            # App configuration
+│   ├── handlers/          # Route handlers
+│   ├── middleware/        # Auth middleware (JWT)
+│   ├── models/            # GORM models + migration
+│   └── services/          # Scheduler, validator, holiday
 ├── docs/                  # Dokumentasi modular
 │   ├── quickstart.md      # Panduan instalasi & konfigurasi
 │   ├── desktop.md         # Detail desktop app & sidecar
 │   └── constraints.md     # AI constraints & workflow
-├── PRD.md                 # Product Requirements (Indonesian)
-├── architecture.md        # System architecture + diagrams
-└── database_schema.sql    # Reference SQL schema
+├── planning/              # Dokumen perencanaan (*.gitignore)
+├── scripts/               # Build & utility scripts
+│   └── build-sidecar.sh
 ```
 
 ## Quick Start
