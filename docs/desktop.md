@@ -91,3 +91,8 @@ Ukuran binary ~19MB (bisa di-strip/UPX jadi ~8MB).
 | **Database** | SQLite auto-create di app data directory. Migrasi & seed via GORM tetap sama |
 | **Bundle size** | ~25MB final (Go binary + frontend + Tauri runtime) |
 | **Cross-platform** | Go + Tauri support Linux, macOS, Windows |
+
+---
+
+- [Panduan instalasi & konfigurasi](quickstart.md)
+- [Deskripsi constraints & alur kerja](constraints.md)

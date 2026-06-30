@@ -20,3 +20,8 @@ Admin pilih bulan & konfigurasi → AI Generate (batch) → Validasi
 - **Batch Processing**: Generate per 20 karyawan per batch, digabung & divalidasi backend
 - **Validation Loop**: Validasi jeda 12h, role, double-booking, kuota libur — retry max 3x
 - **Holiday API**: [date.nager.at](https://date.nager.at) — gratis, tanpa auth
+
+---
+
+- [Panduan instalasi & konfigurasi](quickstart.md)
+- [Detail desktop app & sidecar](desktop.md)

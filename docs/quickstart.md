@@ -60,3 +60,8 @@ Atur via environment variable atau `backend/.env`:
 | `HOLIDAY_API_URL` | `https://date.nager.at/api/v3` | Holiday API |
 
 Backend hardcodes: `BatchSize: 20`, `MinRestHours: 12`, `MaxRetries: 3`.
+
+---
+
+- [Deskripsi constraints & alur kerja](constraints.md)
+- [Detail desktop app & sidecar](desktop.md)

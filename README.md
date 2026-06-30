@@ -76,7 +76,6 @@ Detail arsitektur lengkap ada di [architecture.md](architecture.md) dan [docs/de
 │   └── constraints.md     # AI constraints & workflow
 ├── PRD.md                 # Product Requirements (Indonesian)
 ├── architecture.md        # System architecture + diagrams
-├── api_contract.md        # API contract documentation
 └── database_schema.sql    # Reference SQL schema
 ```
 
@@ -110,7 +109,7 @@ Semua endpoint di bawah `/api/v1`:
 | `GET` | `/schedules/:id/share` | ✅ | Public share link |
 | `GET` | `/holidays` | ❌ | Daftar tanggal merah |
 
-Kontrak API lengkap: [api_contract.md](api_contract.md)
+Dokumentasi lengkap: [docs/](docs/)
 
 ## Lisensi
 
