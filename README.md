@@ -12,6 +12,18 @@
 - **Fairness Metrics** — Standar deviasi jam kerja, shift weekend, dan distribusi shift
 - **Export** — PDF, Excel/CSV, Public Share Link (read-only)
 
+## Testing & CI
+
+| Command | Scope | Description |
+|---------|-------|-------------|
+| `npm run test:e2e` | Frontend | Run Playwright end-to-end tests |
+| `npm run lint` | Frontend | Lint with oxlint |
+| `go test ./...` | Backend | Run Go unit tests |
+
+CI/CD via GitHub Actions — runs on every push and PR.
+
+---
+
 ## Tech Stack
 
 | Layer | Teknologi |
@@ -124,3 +136,7 @@ Dokumentasi lengkap: [docs/](docs/)
 ## Lisensi
 
 Distribusi di bawah lisensi **MIT**. Lihat [LICENSE](LICENSE) untuk detail.
+
+## Changelog
+
+Lihat [CHANGELOG.md](CHANGELOG.md) untuk riwayat perubahan.
