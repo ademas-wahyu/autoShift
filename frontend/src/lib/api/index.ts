@@ -1,4 +1,4 @@
-import type { ScheduleConfig, ScheduleDetail } from '@/types'
+import type { ScheduleConfig, ScheduleDetail, Employee, CreateEmployeeRequest, UpdateEmployeeRequest } from '@/types'
 
 let _base: string | null = null
 
@@ -60,5 +60,34 @@ export const api = {
     request<{ data: any }>(`/schedules/${id}/regenerate`, {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+
+  // Employee API
+  listEmployees: (params?: { is_active?: boolean; role_id?: number }) => {
+    const query = new URLSearchParams()
+    if (params?.is_active !== undefined) query.set('is_active', String(params.is_active))
+    if (params?.role_id) query.set('role_id', String(params.role_id))
+    const qs = query.toString()
+    return request<{ data: Employee[] }>(`/employees${qs ? `?${qs}` : ''}`)
+  },
+
+  getEmployee: (id: number) =>
+    request<{ data: Employee }>(`/employees/${id}`),
+
+  createEmployee: (data: CreateEmployeeRequest) =>
+    request<{ data: Employee }>('/employees', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateEmployee: (id: number, data: UpdateEmployeeRequest) =>
+    request<{ data: Employee }>(`/employees/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteEmployee: (id: number) =>
+    request<{ data: any }>(`/employees/${id}`, {
+      method: 'DELETE',
     }),
 }

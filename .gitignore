@@ -56,3 +56,7 @@ src-tauri/binaries/
 
 # folder planning
 /planning
+.commandcode
+
+# database sqlite
+*.db

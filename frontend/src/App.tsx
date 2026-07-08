@@ -1,21 +1,15 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { CalendarGrid } from '@/components/calendar/CalendarGrid'
+import { CalendarToolbar } from '@/components/calendar/CalendarToolbar'
+import { EmployeeList } from '@/components/employee/EmployeeList'
+import { api } from '@/lib/api'
 import type {
   ScheduleShift, ScheduleLeave, CalendarCell,
   Employee, ValidationViolation,
 } from '@/types'
-
-// ─── Mock data for prototype ───────────────────────────────
-const MOCK_EMPLOYEES: Employee[] = [
-  { id: 1, name: 'Budi', role_id: 1, role_name: 'Supervisor', is_active: true },
-  { id: 2, name: 'Siti', role_id: 2, role_name: 'Staff', is_active: true },
-  { id: 3, name: 'Andi', role_id: 2, role_name: 'Staff', is_active: true },
-  { id: 4, name: 'Dewi', role_id: 2, role_name: 'Staff', is_active: true },
-  { id: 5, name: 'Rudi', role_id: 1, role_name: 'Supervisor', is_active: true },
-]
 
 function generateWeekDays(year: number, month: number) {
   const firstDay = new Date(year, month - 1, 1)
@@ -42,13 +36,60 @@ export default function App() {
   const [leaveMode, setLeaveMode] = useState<'fixed' | 'random'>('random')
   const [isGenerating, setIsGenerating] = useState(false)
   const [scheduleStatus, setScheduleStatus] = useState<'draft' | 'published' | null>(null)
+  const [activeTab, setActiveTab] = useState<'schedule' | 'employees'>('schedule')
 
-  // Mock state
+  // Calendar view state
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week')
+  const [selectedWeek, setSelectedWeek] = useState(0)
+  const [selectedRole, setSelectedRole] = useState('Semua')
+
+  // Employees from API
+  const [employees, setEmployees] = useState<Employee[]>([])
+
+  // Schedule state
   const [shifts, setShifts] = useState<ScheduleShift[]>([])
   const [leaves, setLeaves] = useState<ScheduleLeave[]>([])
   const [violations, setViolations] = useState<ValidationViolation[]>([])
 
   const weekDays = useMemo(() => generateWeekDays(year, month), [month, year])
+
+  // Compute unique roles from employees
+  const roles = useMemo(() => {
+    const uniqueRoles = new Set(employees.map((e) => e.role_name))
+    return ['Semua', ...Array.from(uniqueRoles).sort()]
+  }, [employees])
+
+  // Filter employees based on selected role
+  const filteredEmployees = useMemo(() => {
+    if (selectedRole === 'Semua') return employees
+    return employees.filter((e) => e.role_name === selectedRole)
+  }, [employees, selectedRole])
+
+  // Compute week range string
+  const weekRange = useMemo(() => {
+    const startDay = weekDays[selectedWeek * 7]
+    const endDay = weekDays[selectedWeek * 7 + 6]
+    if (!startDay || !endDay) return ''
+    const start = new Date(startDay.date)
+    const end = new Date(endDay.date)
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    
+    if (start.getMonth() === end.getMonth()) {
+      return `${start.getDate()}-${end.getDate()} ${monthNames[start.getMonth()]} ${start.getFullYear()}`
+    }
+    return `${start.getDate()} ${monthNames[start.getMonth()]} - ${end.getDate()} ${monthNames[end.getMonth()]} ${end.getFullYear()}`
+  }, [weekDays, selectedWeek])
+
+  // Fetch employees on mount
+  useEffect(() => {
+    api.listEmployees({ is_active: true })
+      .then((res) => setEmployees(res.data))
+      .catch((err) => console.error('Failed to fetch employees:', err))
+  }, [])
+
+  const handleEmployeesChange = useCallback((updated: Employee[]) => {
+    setEmployees(updated.filter((e) => e.is_active))
+  }, [])
 
   // Generate calendar cells metadata
   const cells: CalendarCell[] = useMemo(() =>
@@ -76,7 +117,7 @@ export default function App() {
       let idCounter = 1
       let leaveIdCounter = 1
 
-      MOCK_EMPLOYEES.forEach((emp) => {
+      employees.forEach((emp) => {
         const offDays = new Set<number>()
         if (leaveMode === 'random') {
           while (offDays.size < 2) {
@@ -180,17 +221,19 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-background">
       <Sidebar
         month={month}
         year={year}
         onPrevMonth={() => {
           if (month === 1) { setMonth(12); setYear(year - 1) }
           else setMonth(month - 1)
+          setSelectedWeek(0)
         }}
         onNextMonth={() => {
           if (month === 12) { setMonth(1); setYear(year + 1) }
           else setMonth(month + 1)
+          setSelectedWeek(0)
         }}
         leaveMode={leaveMode}
         onLeaveModeChange={setLeaveMode}
@@ -199,6 +242,8 @@ export default function App() {
         onExport={() => {}}
         onShare={() => {}}
         scheduleStatus={scheduleStatus ?? undefined}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
@@ -206,23 +251,29 @@ export default function App() {
         <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium">
-              Schedule {' '}
-              {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][month - 1]}
-              {' '}{year}
+              {activeTab === 'schedule' ? (
+                <>
+                  Schedule {' '}
+                  {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][month - 1]}
+                  {' '}{year}
+                </>
+              ) : (
+                'Manajemen Karyawan'
+              )}
             </span>
-            {scheduleStatus && (
+            {activeTab === 'schedule' && scheduleStatus && (
               <Badge variant={scheduleStatus === 'published' ? 'secondary' : 'outline'}>
                 {scheduleStatus === 'published' ? 'Published' : 'Draft'}
               </Badge>
             )}
-            {scheduleStatus === 'draft' && (
+            {activeTab === 'schedule' && scheduleStatus === 'draft' && (
               <span className="text-xs text-muted-foreground">Pending Review</span>
             )}
           </div>
 
           <div className="flex items-center gap-3">
-            {scheduleStatus === 'draft' && (
+            {activeTab === 'schedule' && scheduleStatus === 'draft' && (
               <Button variant="default" className="bg-emerald-600 hover:bg-emerald-700 gap-1.5" onClick={handlePublish}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -236,86 +287,115 @@ export default function App() {
           </div>
         </header>
 
-        {/* Legend bar */}
-        <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border">
-          <div className="flex items-center gap-4">
-            <h2 className="text-lg font-bold">Kalender Shift</h2>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-500" />Pagi</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-500" />Siang</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-indigo-500" />Malam</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-muted-foreground/30" />Libur</span>
+        {activeTab === 'schedule' ? (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Legend bar */}
+            <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border shrink-0">
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-bold">Kalender Shift</h2>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-500" />Pagi</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-500" />Siang</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-indigo-500" />Malam</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-muted-foreground/30" />Libur</span>
+                </div>
+              </div>
+              {shifts.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  🎯 Fairness: SD 4.2 jam
+                </span>
+              )}
             </div>
-          </div>
-          {shifts.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              🎯 Fairness: SD 4.2 jam
-            </span>
-          )}
-        </div>
 
-        {/* Calendar */}
-        <div className="flex-1 overflow-auto px-6 pb-6 pt-4">
-          {shifts.length === 0 && !isGenerating ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <svg className="w-16 h-16 mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p className="text-lg font-medium mb-1">Belum ada jadwal</p>
-              <p className="text-sm">Atur konfigurasi di sidebar lalu tekan <strong>Generate Jadwal</strong></p>
-            </div>
-          ) : isGenerating ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <span className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
-              <p className="text-lg font-medium">AI sedang meng-generate jadwal...</p>
-              <p className="text-sm">Memproses batch 1/1</p>
-            </div>
-          ) : (
-            <>
-              <CalendarGrid
-                cells={cells}
-                shifts={shifts}
-                leaves={leaves}
-                employees={MOCK_EMPLOYEES}
-                weekDays={weekDays}
-                onDrop={handleDrop}
-              />
+            {/* Calendar content */}
+            <div className="flex-1 flex flex-col overflow-auto px-6 pb-6 pt-4">
+              {shifts.length === 0 && !isGenerating ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+                  <svg className="w-16 h-16 mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-lg font-medium mb-1">Belum ada jadwal</p>
+                  <p className="text-sm">Atur konfigurasi di sidebar lalu tekan <strong>Generate Jadwal</strong></p>
+                </div>
+              ) : isGenerating ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+                  <span className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
+                  <p className="text-lg font-medium">AI sedang meng-generate jadwal...</p>
+                  <p className="text-sm">Memproses batch 1/1</p>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col gap-4">
+                  {/* Toolbar */}
+                  <CalendarToolbar
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    selectedWeek={selectedWeek}
+                    totalWeeks={5}
+                    onPrevWeek={() => setSelectedWeek((w) => Math.max(0, w - 1))}
+                    onNextWeek={() => setSelectedWeek((w) => Math.min(4, w + 1))}
+                    weekRange={weekRange}
+                    roles={roles}
+                    selectedRole={selectedRole}
+                    onRoleChange={setSelectedRole}
+                    employeeCount={selectedRole === 'Semua' ? employees.length : filteredEmployees.length}
+                  />
 
-              {/* Violation banner */}
-              {violations.length > 0 && (
-                <div className="mt-4 p-4 rounded-lg bg-destructive/10 border border-destructive/30">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-destructive mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div>
-                      <h4 className="text-sm font-semibold text-destructive">
-                        {violations.length} Konflik Terdeteksi — Butuh Manual Fix
-                      </h4>
-                      {violations.map((v, i) => (
-                        <p key={i} className="text-sm text-destructive/80 mt-0.5">
-                          <strong>{v.employee_name}:</strong> {v.message}
-                        </p>
-                      ))}
+                  {/* Calendar grid */}
+                  <div className="flex-1">
+                    <CalendarGrid
+                      cells={cells}
+                      shifts={shifts}
+                      leaves={leaves}
+                      employees={filteredEmployees}
+                      weekDays={weekDays}
+                      viewMode={viewMode}
+                      selectedWeek={selectedWeek}
+                      onDrop={handleDrop}
+                    />
+                  </div>
+
+                  {/* Violation banner */}
+                  {violations.length > 0 && (
+                    <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30">
+                      <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-destructive mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                          <h4 className="text-sm font-semibold text-destructive">
+                            {violations.length} Konflik Terdeteksi — Butuh Manual Fix
+                          </h4>
+                          {violations.map((v, i) => (
+                            <p key={i} className="text-sm text-destructive/80 mt-0.5">
+                              <strong>{v.employee_name}:</strong> {v.message}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
                     </div>
+                  )}
+
+                  {/* Hint */}
+                  <div className="text-xs text-muted-foreground flex items-center gap-4 shrink-0">
+                    <span>💡 Seret blok shift ke hari/karyawan lain untuk override manual</span>
+                    <span>|</span>
+                    <span>
+                      <span className="inline-block w-3 h-3 border border-dashed border-muted-foreground/30 rounded align-middle mr-1" />
+                      Belum di-generate
+                    </span>
                   </div>
                 </div>
               )}
-
-              {/* Hint */}
-              <div className="mt-4 text-xs text-muted-foreground flex items-center gap-4">
-                <span>💡 Seret blok shift ke hari/karyawan lain untuk override manual</span>
-                <span>|</span>
-                <span>
-                  <span className="inline-block w-3 h-3 border border-dashed border-muted-foreground/30 rounded align-middle mr-1" />
-                  Belum di-generate
-                </span>
-              </div>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        ) : (
+          /* Employee Management */
+          <div className="flex-1 overflow-auto px-6 pb-6 pt-4">
+            <EmployeeList onEmployeesChange={handleEmployeesChange} />
+          </div>
+        )}
       </main>
     </div>
   )

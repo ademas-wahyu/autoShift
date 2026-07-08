@@ -44,6 +44,7 @@ func main() {
 	// ── Handlers ────────────────────────────────────────────
 	scheduleHandler := handlers.NewScheduleHandler(schedulerEngine)
 	exportHandler := handlers.NewExportHandler()
+	employeeHandler := handlers.NewEmployeeHandler()
 
 	// ── Fiber App ────────────────────────────────────────────
 	app := fiber.New(fiber.Config{
@@ -110,6 +111,14 @@ func main() {
 	protected.Post("/:id/regenerate", scheduleHandler.Regenerate)
 	protected.Get("/:id/export", exportHandler.Export)
 	protected.Get("/:id/share", exportHandler.Share)
+
+	// Employee routes (public for now — no login system yet)
+	emp := api.Group("/employees")
+	emp.Get("/", employeeHandler.List)
+	emp.Get("/:id", employeeHandler.Get)
+	emp.Post("/", employeeHandler.Create)
+	emp.Put("/:id", employeeHandler.Update)
+	emp.Delete("/:id", employeeHandler.Delete)
 
 	// ── Start ────────────────────────────────────────────────
 	port := cfg.ServerPort

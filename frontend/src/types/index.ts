@@ -16,10 +16,30 @@ export interface EmployeeRole {
 
 export interface Employee {
   id: number
+  tenant_id: number
   name: string
   role_id: number
   role_name: string
+  email: string
+  phone: string
   is_active: boolean
+  created_at: string
+  role?: EmployeeRole
+}
+
+export interface CreateEmployeeRequest {
+  name: string
+  role_id: number
+  email?: string
+  phone?: string
+}
+
+export interface UpdateEmployeeRequest {
+  name?: string
+  role_id?: number
+  email?: string
+  phone?: string
+  is_active?: boolean
 }
 
 export interface RoleRequirement {

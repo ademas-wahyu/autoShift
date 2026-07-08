@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
+type ActiveTab = 'schedule' | 'employees'
+
 interface SidebarProps {
   month: number
   year: number
@@ -21,6 +23,8 @@ interface SidebarProps {
   onExport: () => void
   onShare: () => void
   scheduleStatus?: 'draft' | 'published'
+  activeTab: ActiveTab
+  onTabChange: (tab: ActiveTab) => void
 }
 
 const monthNames = [
@@ -32,6 +36,7 @@ export function Sidebar({
   month, year, onPrevMonth, onNextMonth,
   leaveMode, onLeaveModeChange,
   isGenerating, onGenerate, onExport, onShare,
+  activeTab, onTabChange,
 }: SidebarProps) {
   return (
     <aside className="w-72 bg-card border-r border-border flex flex-col shrink-0 h-screen">
@@ -41,6 +46,32 @@ export function Sidebar({
           auto<span className="text-blue-600">Shift</span>
         </h1>
         <p className="text-xs text-muted-foreground mt-0.5">AI Shift Scheduler</p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex border-b border-border">
+        <button
+          className={cn(
+            'flex-1 px-4 py-2.5 text-sm font-medium transition-colors',
+            activeTab === 'schedule'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+          onClick={() => onTabChange('schedule')}
+        >
+          Jadwal
+        </button>
+        <button
+          className={cn(
+            'flex-1 px-4 py-2.5 text-sm font-medium transition-colors',
+            activeTab === 'employees'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+          onClick={() => onTabChange('employees')}
+        >
+          Karyawan
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
